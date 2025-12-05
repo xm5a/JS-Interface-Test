@@ -85,6 +85,13 @@
             dragRotate: false
         });
 
+            map.addControl(new maplibregl.NavigationControl({
+        visualizePitch: true,
+        visualizeRoll: true,
+        showZoom: true,
+        showCompass: true
+    }));
+
         // 1.1 Custom User Marker Setup (Replicating the original blue circle look)
         const el = document.createElement('div');
         el.className = 'user-marker';
