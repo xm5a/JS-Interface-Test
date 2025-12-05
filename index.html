@@ -86,16 +86,38 @@
         // Default Location (New York Central Park)
         const DEFAULT_LNG = -73.968285;
         const DEFAULT_LAT = 40.785091;
-        
+        const startLngLat = {DEFAULT_LNG, DEFAULT_LAT};
         // Initialize MapLibre Map
         const map = new maplibregl.Map({
-            container: 'map', // container ID
-            style: 'https://demotiles.maplibre.org/style.json', // Open-source style URL
-            center: [DEFAULT_LNG, DEFAULT_LAT], // starting position [lng, lat]
-            zoom: 15, // starting zoom
-            interactive: true,
-            pitchWithRotate: false, // Helps keep it simple for tracking
-            dragRotate: false
+            container: 'map',
+            base: '', // <-- FIX: Explicitly set the base URL to prevent SecurityError
+            style: {
+                version: 8,
+                sources: {
+                    'carto-tiles': {
+                        type: 'raster',
+                        tiles: [
+                            'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                            'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                            'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
+                        ],
+                        tileSize: 256,
+                        attribution: '© CARTO'
+                    }
+                },
+                layers: [
+                    {
+                        id: 'simple-tiles',
+                        type: 'raster',
+                        source: 'carto-tiles',
+                        minzoom: 0,
+                        maxzoom: 22
+                    }
+                ]
+            },
+            center: startLngLat,
+            zoom: 14,
+            attributionControl: false // Hide small text for clean app look
         });
 
         // 1.1 Custom User Marker Setup (Replicating the original blue circle look)
