@@ -84,15 +84,15 @@
         // --- 1. Map Initialization ---
 
         // Default Location (New York Central Park)
-        const DEFAULT_LNG = -73.968285;
-        const DEFAULT_LAT = 40.785091;
-        const startLngLat = {DEFAULT_LNG, DEFAULT_LAT};
+const DEFAULT_LNG = -73.968285;
+const DEFAULT_LAT = 40.785091;
+const startLngLat = [DEFAULT_LNG, DEFAULT_LAT]; // ✅ Array, not object
         // Initialize MapLibre Map
-        const map = new maplibregl.Map({
-            container: 'map',
-            base: '', // <-- FIX: Explicitly set the base URL to prevent SecurityError
-            style: {
-                version: 8,
+const map = new maplibregl.Map({
+    container: 'map',
+    // Remove the 'base' property - it doesn't exist
+    style: {
+        version: 8,
                 sources: {
                     'carto-tiles': {
                         type: 'raster',
@@ -114,11 +114,11 @@
                         maxzoom: 22
                     }
                 ]
-            },
-            center: startLngLat,
-            zoom: 14,
-            attributionControl: false // Hide small text for clean app look
-        });
+    },
+    center: startLngLat,
+    zoom: 14,
+    attributionControl: false
+});
 
         // 1.1 Custom User Marker Setup (Replicating the original blue circle look)
         const el = document.createElement('div');
