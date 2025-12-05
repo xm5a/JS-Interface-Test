@@ -49,8 +49,18 @@
             <!-- Map Layer -->
             <div id="map" class="bg-gray-200"></div>
 
+            <!-- Zoom Controls (Bottom Right) -->
+            <div class="absolute bottom-24 right-6 flex flex-col space-y-3 z-[400] drop-shadow-lg">
+                <button onclick="zoomIn()" class="bg-white text-gray-700 p-2.5 rounded-full shadow-lg hover:bg-gray-100 transition-colors active:scale-95 ring-1 ring-gray-300 w-12 h-12 flex items-center justify-center">
+                    <i class="ph ph-plus text-2xl"></i>
+                </button>
+                <button onclick="zoomOut()" class="bg-white text-gray-700 p-2.5 rounded-full shadow-lg hover:bg-gray-100 transition-colors active:scale-95 ring-1 ring-gray-300 w-12 h-12 flex items-center justify-center">
+                    <i class="ph ph-minus text-2xl"></i>
+                </button>
+            </div>
+
             <!-- Floating Action Button (Start/Stop) -->
-            <div class="absolute bottom-8 left-0 right-0 flex justify-center z-[400] px-6">
+            <div class="absolute bottom-4 left-0 right-0 flex justify-center z-[400] px-6">
                 <button id="btn-toggle-track" onclick="toggleTracking()" class="shadow-2xl bg-blue-600 hover:bg-blue-700 text-white w-full max-w-md h-16 rounded-2xl flex items-center justify-center gap-3 font-bold text-xl active:scale-95 transition-all duration-200 ring-4 ring-white/30 backdrop-blur-sm">
                     <i id="btn-icon" class="ph-fill ph-play text-2xl"></i>
                     <span id="btn-text">Start Tracking</span>
@@ -60,15 +70,18 @@
 
     </main>
 
+    <!-- MapLibre Worker URL Fix: MUST be set before the library is loaded -->
+    <script>
+        // Explicitly set the worker URL to prevent SecurityErrors when running in restricted environments.
+        window.maplibregl = window.maplibregl || {};
+        window.maplibregl.workerUrl = 'https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl-worker.js';
+    </script>
+
     <!-- MapLibre GL JS -->
     <script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
 
     <script>
         // --- 1. Map Initialization ---
-
-        // Fix for SecurityError: Explicitly set the worker URL to avoid the cross-origin frame access error
-        // when running in restricted environments like webviews or iframes.
-        maplibregl.workerUrl = 'https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl-worker.js';
 
         // Default Location (New York Central Park)
         const DEFAULT_LNG = -73.968285;
@@ -85,13 +98,6 @@
             dragRotate: false
         });
 
-            map.addControl(new maplibregl.NavigationControl({
-        visualizePitch: true,
-        visualizeRoll: true,
-        showZoom: true,
-        showCompass: true
-    }));
-
         // 1.1 Custom User Marker Setup (Replicating the original blue circle look)
         const el = document.createElement('div');
         el.className = 'user-marker';
@@ -99,6 +105,17 @@
         const userMarker = new maplibregl.Marker({ element: el })
             .setLngLat([DEFAULT_LNG, DEFAULT_LAT])
             .addTo(map);
+
+        // 1.2 Zoom Controls
+        function zoomIn() {
+            // Smoothly zoom in by one level
+            map.zoomIn({ duration: 300 }); 
+        }
+
+        function zoomOut() {
+            // Smoothly zoom out by one level
+            map.zoomOut({ duration: 300 }); 
+        }
 
         // --- 2. Interaction Logic ---
 
