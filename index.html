@@ -66,6 +66,11 @@
                     <span id="btn-text">Start Tracking</span>
                 </button>
             </div>
+
+            <!-- Geofence Status Display -->
+            <div id="geofence-status" class="absolute top-4 left-4 bg-white px-4 py-2 rounded-lg shadow-lg z-[400] font-semibold">
+                <span class="text-gray-500">Checking...</span>
+            </div>
         </div>
 
     </main>
@@ -84,18 +89,20 @@
         // --- 1. Map Initialization ---
 
         // Default Location (New York Central Park)
-const DEFAULT_LNG = -73.968285;
-const DEFAULT_LAT = 40.785091;
-const startLngLat = [DEFAULT_LNG, DEFAULT_LAT]; // ✅ Array, not object
+        const DEFAULT_LNG = -73.968285;
+        const DEFAULT_LAT = 40.785091;
+        const startLngLat = [DEFAULT_LNG, DEFAULT_LAT];
         const geofenceCenter = [72.8777, 19.0760]; // Thane, Maharashtra
-        const geofenceRadius = 2000;
+        const geofenceRadius = 2000; // meters
+        
+        // Geofence state tracking
+        let isInside = false;
         
         // Initialize MapLibre Map
-const map = new maplibregl.Map({
-    container: 'map',
-    // Remove the 'base' property - it doesn't exist
-    style: {
-        version: 8,
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: {
+                version: 8,
                 sources: {
                     'carto-tiles': {
                         type: 'raster',
@@ -117,14 +124,23 @@ const map = new maplibregl.Map({
                         maxzoom: 22
                     }
                 ]
-    },
-    center: startLngLat,
-    zoom: 14,
-    attributionControl: false
-});
+            },
+            center: startLngLat,
+            zoom: 14,
+            attributionControl: false
+        });
+
+        // Custom User Marker Setup
+        const el = document.createElement('div');
+        el.className = 'user-marker';
+
+        const userMarker = new maplibregl.Marker({ element: el })
+            .setLngLat([DEFAULT_LNG, DEFAULT_LAT])
+            .addTo(map);
 
         map.on('load', () => {
-             map.addSource('geofence', {
+            // Add geofence circle source
+            map.addSource('geofence', {
                 type: 'geojson',
                 data: {
                     type: 'Feature',
@@ -134,6 +150,8 @@ const map = new maplibregl.Map({
                     }
                 }
             });
+
+            // Add geofence fill layer
             map.addLayer({
                 id: 'geofence-fill',
                 type: 'circle',
@@ -151,6 +169,7 @@ const map = new maplibregl.Map({
                 }
             });
 
+            // Add geofence border layer
             map.addLayer({
                 id: 'geofence-border',
                 type: 'circle',
@@ -170,40 +189,65 @@ const map = new maplibregl.Map({
                     'circle-stroke-opacity': 0.8
                 }
             });
-        }
-               function checkGeofence(startlngLat) {
+
+            // Check initial position
+            checkGeofence(DEFAULT_LAT, DEFAULT_LNG);
+        });
+
+        // Geofence checking function
+        function checkGeofence(lat, lng) {
             const distance = getDistance(
                 geofenceCenter[1], geofenceCenter[0],
-                startlngLat.DEFAULT_LAT, startlngLat.DEFAULT_LNG
+                lat, lng
             );
+
+            const wasInside = isInside;
+            isInside = distance <= geofenceRadius;
+
+            const statusEl = document.getElementById('geofence-status');
+
+            if (isInside) {
+                statusEl.innerHTML = '<span class="text-green-600">✓ Inside Geofence</span>';
+                if (!wasInside) {
+                    console.log('🟢 GEOFENCE ENTERED');
+                    sendToAndroid('geofenceEntered', { lat, lng, distance });
+                }
+            } else {
+                statusEl.innerHTML = '<span class="text-red-600">✗ Outside Geofence</span>';
+                if (wasInside) {
+                    console.log('🔴 GEOFENCE EXITED');
+                    sendToAndroid('geofenceExited', { lat, lng, distance });
+                }
+            }
         }
 
-        const wasInside = isInside;
-           const isInside = distance <= geofenceRadius;
+        // Haversine distance calculation
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; // Earth radius in meters
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
 
-        if(isInside){
-            console.log("Inside");
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                    Math.cos(φ1) * Math.cos(φ2) *
+                    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c;
         }
-        else{
-            console.log("Outside");
+
+        // Convert meters to pixels at max zoom
+        function metersToPixelsAtMaxZoom(meters, latitude) {
+            return meters / 0.075 / Math.cos(latitude * Math.PI / 180);
         }
 
-        // 1.1 Custom User Marker Setup (Replicating the original blue circle look)
-        const el = document.createElement('div');
-        el.className = 'user-marker';
-
-        const userMarker = new maplibregl.Marker({ element: el })
-            .setLngLat([DEFAULT_LNG, DEFAULT_LAT])
-            .addTo(map);
-
-        // 1.2 Zoom Controls
+        // Zoom Controls
         function zoomIn() {
-            // Smoothly zoom in by one level
             map.zoomIn({ duration: 300 }); 
         }
 
         function zoomOut() {
-            // Smoothly zoom out by one level
             map.zoomOut({ duration: 300 }); 
         }
 
@@ -211,18 +255,16 @@ const map = new maplibregl.Map({
 
         // Bridge to Android (Native)
         function sendToAndroid(action, data) {
-            console.log(`Sending to Android -> Action: ${action}, Data: ${data}`);
+            console.log(`Sending to Android -> Action: ${action}, Data:`, data);
             
-            // Check if running in actual Android WebView with interface 'Android'
             if (typeof Android !== 'undefined' && Android.handleAction) {
                 Android.handleAction(action, JSON.stringify(data || {}));
             }
         }
 
-        // --- 3. Tracking Simulation Logic ---
+        // --- 3. Tracking Logic ---
         let isTracking = false;
-        let trackingInterval;
-        let seconds = 0;
+        let watchId = null;
 
         function toggleTracking() {
             const btn = document.getElementById('btn-toggle-track');
@@ -239,7 +281,7 @@ const map = new maplibregl.Map({
                 btnIcon.classList.add('ph-stop');
                 
                 sendToAndroid('startTracking');
-                startSimulation();
+                startWatchingPosition();
             } else {
                 // STOP
                 isTracking = false;
@@ -250,23 +292,19 @@ const map = new maplibregl.Map({
                 btnIcon.classList.add('ph-play');
 
                 sendToAndroid('stopTracking');
-                stopSimulation();
+                stopWatchingPosition();
             }
         }
 
-        // Mock simulation variables
-        let lat = DEFAULT_LAT;
-        let lng = DEFAULT_LNG;
-        let isWatching = false;
-        let watchId = null;
-        
-        function startWatching(){
-            if(isWatching) return;
+        function startWatchingPosition() {
+            if (watchId !== null) return;
 
-            if(!navigator.geolocation){
+            if (!navigator.geolocation) {
                 console.error("Geolocation is not supported");
+                alert("Geolocation is not supported by your browser");
                 return;
             }
+
             watchId = navigator.geolocation.watchPosition(
                 (position) => {
                     const lat = position.coords.latitude;
@@ -274,61 +312,54 @@ const map = new maplibregl.Map({
                     const accuracy = position.coords.accuracy;
                     const timestamp = new Date(position.timestamp);
 
-                    console.log('Position Update: ', { lat, lng, accuracy: `${accuracy.toFixed(2)}m`, timestamp: timestamp.toLocaleTimeString()});
+                    console.log('Position Update:', { 
+                        lat, 
+                        lng, 
+                        accuracy: `${accuracy.toFixed(2)}m`, 
+                        timestamp: timestamp.toLocaleTimeString()
+                    });
 
-          userMarker.setLngLat([lng, lat]);
-                    map.panTo([lng, lat], {duration: 1000});
+                    // Update marker position
+                    userMarker.setLngLat([lng, lat]);
+                    map.panTo([lng, lat], { duration: 1000 });
+
+                    // Check geofence
+                    checkGeofence(lat, lng);
                 },
-
                 (error) => {
                     console.error("Geolocation Error:", error.message);
 
-                    switch(error.code){
+                    switch(error.code) {
                         case error.PERMISSION_DENIED:
-                            alert('Location Denied');
+                            alert('Location permission denied');
                             break;
                         case error.POSITION_UNAVAILABLE:
-                            alert('Location info Unavailable');
+                            alert('Location information unavailable');
                             break;
                         case error.TIMEOUT:
-                            alert('Location Timed Out');
+                            alert('Location request timed out');
                             break;
                     }
+                    
+                    // Stop tracking on error
+                    toggleTracking();
                 },
-
                 {
                     enableHighAccuracy: true,
                     maximumAge: 0,
                     timeout: 10000
                 }
-                );
-            isWatching = true;
-            console.log("Watching...");
+            );
+
+            console.log("Started watching position...");
         }
 
-        function startSimulation() {
-            //clearInterval(trackingInterval);
-            //trackingInterval = setInterval(() => {
-                //seconds++;
-
-               startWatchingPosition(); 
-                
-                // Simulate movement (random small changes)
-                //lat += (Math.random() - 0.5) * 0.0002;
-                //lng += (Math.random() - 0.5) * 0.0002;
-                //const newLngLat = [lng, lat];
-
-                // Update MapLibre Marker position
-                //userMarker.setLngLat(newLngLat);
-                
-                // Center map on new position with a smooth animation
-                //map.panTo(newLngLat, { duration: 1000 });
-
-            //}, 1000);
-        }
-
-        function stopSimulation() {
-            clearInterval(trackingInterval);
+        function stopWatchingPosition() {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+                console.log("Stopped watching position");
+            }
         }
     </script>
 </body>
