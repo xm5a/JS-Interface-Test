@@ -3,292 +3,332 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GeoTrack MapLibre</title>
-    
-    <!-- MapLibre GL JS CSS -->
-    <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
-    
-    <!-- MapLibre JS - Load BEFORE our script -->
-    <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+    <title>GeoTrack WebView</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- MapLibre GL CSS -->
+    <link href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" rel="stylesheet" />
     
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            width: 100%;
-            overflow: hidden;
-        }
-        
+        /* Map Container Height adjustment */
         #map {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            width: 100%;
             height: 100%;
+            width: 100%;
+            z-index: 10;
         }
 
-        /* Floating Stats Card */
-        .stats-card {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 16px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-            z-index: 1000;
-        }
-
-        .stat-item {
-            text-align: center;
-            padding: 0 12px;
-        }
-
-        .stat-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            color: #6b7280;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-
-        .stat-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #111827;
-            margin-top: 4px;
-        }
-
-        .stat-unit {
-            font-size: 12px;
-            font-weight: normal;
-            color: #9ca3af;
-        }
-
-        /* Action Button */
-        .action-button {
-            position: absolute;
-            bottom: 30px;
-            left: 20px;
-            right: 20px;
-            height: 56px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-weight: bold;
-            font-size: 18px;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            transition: transform 0.1s;
-            z-index: 1000;
-        }
-
-        .action-button:active {
-            transform: scale(0.97);
-        }
-
-        .btn-start {
-            background: #2563eb;
-            color: white;
-        }
-
-        .btn-stop {
-            background: #ef4444;
-            color: white;
-        }
-
+        /* MapLibre specific marker styling */
         .user-marker {
-            width: 20px;
-            height: 20px;
             background-color: #2563eb;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             border: 3px solid white;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            cursor: pointer;
+        }
+
+        /* Hide MapLibre default controls for a cleaner app look */
+        .maplibregl-ctrl {
+            display: none !important;
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 text-gray-800 h-screen w-screen overflow-hidden flex flex-col font-sans select-none">
 
-    <!-- Map Container -->
-    <div id="map"></div>
+    <!-- Main Content Area -->
+    <main class="flex-grow relative overflow-hidden bg-gray-100">
+        
+        <!-- VIEW: MAP (Default) -->
+        <div id="view-map" class="absolute inset-0 flex flex-col">
+            <!-- Map Layer -->
+            <div id="map" class="bg-gray-200"></div>
 
-    <!-- Floating Stats Card -->
-    <div class="stats-card">
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; border-right: 1px solid #e5e7eb;">
-            <div class="stat-item" style="border-right: 1px solid #e5e7eb;">
-                <div class="stat-label">Speed</div>
-                <div class="stat-value"><span id="val-speed">0.0</span> <span class="stat-unit">km/h</span></div>
+            <!-- Zoom Controls (Bottom Right) -->
+            <div class="absolute bottom-24 right-6 flex flex-col space-y-3 z-[400] drop-shadow-lg">
+                <button onclick="zoomIn()" class="bg-white text-gray-700 p-2.5 rounded-full shadow-lg hover:bg-gray-100 transition-colors active:scale-95 ring-1 ring-gray-300 w-12 h-12 flex items-center justify-center">
+                    <i class="ph ph-plus text-2xl"></i>
+                </button>
+                <button onclick="zoomOut()" class="bg-white text-gray-700 p-2.5 rounded-full shadow-lg hover:bg-gray-100 transition-colors active:scale-95 ring-1 ring-gray-300 w-12 h-12 flex items-center justify-center">
+                    <i class="ph ph-minus text-2xl"></i>
+                </button>
             </div>
-            <div class="stat-item" style="border-right: 1px solid #e5e7eb;">
-                <div class="stat-label">Distance</div>
-                <div class="stat-value"><span id="val-dist">0.0</span> <span class="stat-unit">km</span></div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">Time</div>
-                <div class="stat-value" id="val-time">00:00</div>
+
+            <!-- Floating Action Button (Start/Stop) -->
+            <div class="absolute bottom-4 left-0 right-0 flex justify-center z-[400] px-6">
+                <button id="btn-toggle-track" onclick="toggleTracking()" class="shadow-2xl bg-blue-600 hover:bg-blue-700 text-white w-full max-w-md h-16 rounded-2xl flex items-center justify-center gap-3 font-bold text-xl active:scale-95 transition-all duration-200 ring-4 ring-white/30 backdrop-blur-sm">
+                    <i id="btn-icon" class="ph-fill ph-play text-2xl"></i>
+                    <span id="btn-text">Start Tracking</span>
+                </button>
             </div>
         </div>
-    </div>
 
-    <!-- Floating Action Button -->
-    <button id="btn-toggle-track" class="action-button btn-start" onclick="toggleTracking()">
-        <i id="btn-icon" class="ph-fill ph-play" style="font-size: 24px;"></i>
-        <span id="btn-text">Start Tracking</span>
-    </button>
+    </main>
+
+    <!-- MapLibre Worker URL Fix: MUST be set before the library is loaded -->
+    <script>
+        // Explicitly set the worker URL to prevent SecurityErrors when running in restricted environments.
+        window.maplibregl = window.maplibregl || {};
+        window.maplibregl.workerUrl = 'https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl-worker.js';
+    </script>
+
+    <!-- MapLibre GL JS -->
+    <script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
 
     <script>
-        // Wait for MapLibre to be fully loaded
-        window.addEventListener('load', function() {
-            console.log('MapLibre available:', typeof maplibregl !== 'undefined');
+        // --- 1. Map Initialization ---
+
+        // Default Location (New York Central Park)
+const DEFAULT_LNG = -73.968285;
+const DEFAULT_LAT = 40.785091;
+const startLngLat = [DEFAULT_LNG, DEFAULT_LAT]; // ✅ Array, not object
+        const geofenceCenter = [72.8777, 19.0760]; // Thane, Maharashtra
+        const geofenceRadius = 2000;
+        // Initialize MapLibre Map
+const map = new maplibregl.Map({
+    container: 'map',
+    // Remove the 'base' property - it doesn't exist
+    style: {
+        version: 8,
+                sources: {
+                    'carto-tiles': {
+                        type: 'raster',
+                        tiles: [
+                            'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                            'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                            'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
+                        ],
+                        tileSize: 256,
+                        attribution: '© CARTO'
+                    }
+                },
+                layers: [
+                    {
+                        id: 'simple-tiles',
+                        type: 'raster',
+                        source: 'carto-tiles',
+                        minzoom: 0,
+                        maxzoom: 22
+                    }
+                ]
+    },
+    center: startLngLat,
+    zoom: 14,
+    attributionControl: false
+});
+
+        map.on('load', () => {
+             map.addSource('geofence', {
+                type: 'geojson',
+                data: {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: geofenceCenter
+                    }
+                }
+            });
+            map.addLayer({
+                id: 'geofence-fill',
+                type: 'circle',
+                source: 'geofence',
+                paint: {
+                    'circle-radius': {
+                        stops: [
+                            [0, 0],
+                            [20, metersToPixelsAtMaxZoom(geofenceRadius, geofenceCenter[1])]
+                        ],
+                        base: 2
+                    },
+                    'circle-color': '#3b82f6',
+                    'circle-opacity': 0.2
+                }
+            });
+
+            map.addLayer({
+                id: 'geofence-border',
+                type: 'circle',
+                source: 'geofence',
+                paint: {
+                    'circle-radius': {
+                        stops: [
+                            [0, 0],
+                            [20, metersToPixelsAtMaxZoom(geofenceRadius, geofenceCenter[1])]
+                        ],
+                        base: 2
+                    },
+                    'circle-color': '#3b82f6',
+                    'circle-opacity': 0,
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#3b82f6',
+                    'circle-stroke-opacity': 0.8
+                }
+            });
+        }
+               function checkGeofence(lngLat) {
+            const distance = getDistance(
+                geofenceCenter[1], geofenceCenter[0],
+                lngLat.lat, lngLat.lng
+            );
+        }
+
+        const wasInside = isInside;
+           const isInside = distance <= geofenceRadius;
+
+        if(isInside){
+            console.log("Inside");
+        }
+        else{
+            console.log("Outside");
+        }
+
+        // 1.1 Custom User Marker Setup (Replicating the original blue circle look)
+        const el = document.createElement('div');
+        el.className = 'user-marker';
+
+        const userMarker = new maplibregl.Marker({ element: el })
+            .setLngLat([DEFAULT_LNG, DEFAULT_LAT])
+            .addTo(map);
+
+        // 1.2 Zoom Controls
+        function zoomIn() {
+            // Smoothly zoom in by one level
+            map.zoomIn({ duration: 300 }); 
+        }
+
+        function zoomOut() {
+            // Smoothly zoom out by one level
+            map.zoomOut({ duration: 300 }); 
+        }
+
+        // --- 2. Interaction Logic ---
+
+        // Bridge to Android (Native)
+        function sendToAndroid(action, data) {
+            console.log(`Sending to Android -> Action: ${action}, Data: ${data}`);
             
-            if (typeof maplibregl === 'undefined') {
-                console.error('MapLibre GL JS not loaded!');
+            // Check if running in actual Android WebView with interface 'Android'
+            if (typeof Android !== 'undefined' && Android.handleAction) {
+                Android.handleAction(action, JSON.stringify(data || {}));
+            }
+        }
+
+        // --- 3. Tracking Simulation Logic ---
+        let isTracking = false;
+        let trackingInterval;
+        let seconds = 0;
+
+        function toggleTracking() {
+            const btn = document.getElementById('btn-toggle-track');
+            const btnText = document.getElementById('btn-text');
+            const btnIcon = document.getElementById('btn-icon');
+
+            if (!isTracking) {
+                // START
+                isTracking = true;
+                btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                btn.classList.add('bg-red-500', 'hover:bg-red-600');
+                btnText.innerText = "Stop Tracking";
+                btnIcon.classList.remove('ph-play');
+                btnIcon.classList.add('ph-stop');
+                
+                sendToAndroid('startTracking');
+                startSimulation();
+            } else {
+                // STOP
+                isTracking = false;
+                btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                btn.classList.remove('bg-red-500', 'hover:bg-red-600');
+                btnText.innerText = "Start Tracking";
+                btnIcon.classList.remove('ph-stop');
+                btnIcon.classList.add('ph-play');
+
+                sendToAndroid('stopTracking');
+                stopSimulation();
+            }
+        }
+
+        // Mock simulation variables
+        let lat = DEFAULT_LAT;
+        let lng = DEFAULT_LNG;
+        let isWatching = false;
+        let watchId = null;
+        
+        function startWatching(){
+            if(isWatching) return;
+
+            if(!navigator.geolocation){
+                console.error("Geolocation is not supported");
                 return;
             }
+            watchId = navigator.geolocation.watchPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    const accuracy = position.coords.accuracy;
+                    const timestamp = new Date(position.timestamp);
 
-            // --- Map Initialization ---
-            const startLngLat = [-73.968285, 40.785091];
-            let userMarker;
-            let map;
+                    console.log('Position Update: ', { lat, lng, accuracy: `${accuracy.toFixed(2)}m`, timestamp: timestamp.toLocaleTimeString()});
 
-            function initializeMap() {
-                try {
-                    map = new maplibregl.Map({
-                        container: 'map',
-                        style: {
-                            version: 8,
-                            sources: {
-                                'osm-tiles': {
-                                    type: 'raster',
-                                    tiles: [
-                                        'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                        'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                        'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
-                                    ],
-                                    tileSize: 256,
-                                    attribution: '© OpenStreetMap contributors'
-                                }
-                            },
-                            layers: [
-                                {
-                                    id: 'osm-tiles-layer',
-                                    type: 'raster',
-                                    source: 'osm-tiles',
-                                    minzoom: 0,
-                                    maxzoom: 19
-                                }
-                            ]
-                        },
-                        center: startLngLat,
-                        zoom: 14,
-                        attributionControl: false
-                    });
+          userMarker.setLngLat([lng, lat]);
+                    map.panTo([lng, lat], {duration: 1000});
+                },
 
-                    map.on('load', () => {
-                        const el = document.createElement('div');
-                        el.className = 'user-marker';
+                (error) => {
+                    console.error("Geolocation Error:", error.message);
 
-                        userMarker = new maplibregl.Marker({element: el})
-                            .setLngLat(startLngLat)
-                            .addTo(map);
-
-                        console.log('✓ Map initialized successfully');
-                    });
-
-                    map.on('error', (e) => {
-                        console.error('Map error:', e);
-                    });
-                } catch (error) {
-                    console.error('Failed to initialize map:', error);
-                }
-            }
-
-            initializeMap();
-
-            // --- Tracking Simulation Logic ---
-            let isTracking = false;
-            let trackingInterval;
-            let seconds = 0;
-            let distance = 0;
-            let speed = 0;
-            
-            let lat = 40.785091;
-            let lng = -73.968285;
-
-            window.toggleTracking = function() {
-                if (!map || !userMarker) {
-                    console.error('Map not ready yet');
-                    return;
-                }
-
-                const btn = document.getElementById('btn-toggle-track');
-                const btnText = document.getElementById('btn-text');
-                const btnIcon = document.getElementById('btn-icon');
-
-                if (!isTracking) {
-                    isTracking = true;
-                    btn.className = 'action-button btn-stop';
-                    btnText.innerText = "Stop Tracking";
-                    btnIcon.className = 'ph-fill ph-stop';
-                    
-                    startSimulation();
-                } else {
-                    isTracking = false;
-                    btn.className = 'action-button btn-start';
-                    btnText.innerText = "Start Tracking";
-                    btnIcon.className = 'ph-fill ph-play';
-
-                    stopSimulation();
-                }
-            }
-
-            function startSimulation() {
-                clearInterval(trackingInterval);
-                trackingInterval = setInterval(() => {
-                    seconds++;
-                    
-                    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
-                    const secs = (seconds % 60).toString().padStart(2, '0');
-                    document.getElementById('val-time').innerText = `${mins}:${secs}`;
-
-                    // Simulate movement
-                    lat += (Math.random() - 0.4) * 0.0002;
-                    lng += (Math.random() - 0.4) * 0.0002;
-                    const newLngLat = [lng, lat];
-
-                    if (userMarker && map) {
-                        userMarker.setLngLat(newLngLat);
-                        map.panTo(newLngLat, {duration: 1000});
+                    switch(error.code){
+                        case error.PERMISSION_DENIED:
+                            alert('Location Denied');
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            alert('Location info Unavailable');
+                            break;
+                        case error.TIMEOUT:
+                            alert('Location Timed Out');
+                            break;
                     }
+                },
 
-                    // Update speed and distance
-                    speed = (Math.random() * (25 - 10) + 10).toFixed(1);
-                    document.getElementById('val-speed').innerText = speed;
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 0,
+                    timeout: 10000
+                }
+                );
+            isWatching = true;
+            console.log("Watching...");
+        }
 
-                    distance += (speed / 3600);
-                    document.getElementById('val-dist').innerText = distance.toFixed(2);
+        function startSimulation() {
+            //clearInterval(trackingInterval);
+            //trackingInterval = setInterval(() => {
+                //seconds++;
 
-                }, 1000);
-            }
+               startWatchingPosition(); 
+                
+                // Simulate movement (random small changes)
+                //lat += (Math.random() - 0.5) * 0.0002;
+                //lng += (Math.random() - 0.5) * 0.0002;
+                //const newLngLat = [lng, lat];
 
-            function stopSimulation() {
-                clearInterval(trackingInterval);
-            }
-        });
+                // Update MapLibre Marker position
+                //userMarker.setLngLat(newLngLat);
+                
+                // Center map on new position with a smooth animation
+                //map.panTo(newLngLat, { duration: 1000 });
+
+            //}, 1000);
+        }
+
+        function stopSimulation() {
+            clearInterval(trackingInterval);
+        }
     </script>
 </body>
 </html>
