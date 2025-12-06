@@ -89,6 +89,7 @@ const DEFAULT_LAT = 40.785091;
 const startLngLat = [DEFAULT_LNG, DEFAULT_LAT]; // ✅ Array, not object
         const geofenceCenter = [72.8777, 19.0760]; // Thane, Maharashtra
         const geofenceRadius = 2000;
+        
         // Initialize MapLibre Map
 const map = new maplibregl.Map({
     container: 'map',
@@ -170,10 +171,10 @@ const map = new maplibregl.Map({
                 }
             });
         }
-               function checkGeofence(lngLat) {
+               function checkGeofence(startlngLat) {
             const distance = getDistance(
                 geofenceCenter[1], geofenceCenter[0],
-                lngLat.lat, lngLat.lng
+                startlngLat.DEFAULT_LAT, startlngLat.DEFAULT_LNG
             );
         }
 
