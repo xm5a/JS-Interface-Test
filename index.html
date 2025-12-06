@@ -87,6 +87,8 @@
 const DEFAULT_LNG = -73.968285;
 const DEFAULT_LAT = 40.785091;
 const startLngLat = [DEFAULT_LNG, DEFAULT_LAT]; // ✅ Array, not object
+        const geofenceCenter = [72.8777, 19.0760]; // Thane, Maharashtra
+        const geofenceRadius = 2000;
         // Initialize MapLibre Map
 const map = new maplibregl.Map({
     container: 'map',
@@ -119,6 +121,71 @@ const map = new maplibregl.Map({
     zoom: 14,
     attributionControl: false
 });
+
+        map.on('load', () => {
+             map.addSource('geofence', {
+                type: 'geojson',
+                data: {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: geofenceCenter
+                    }
+                }
+            });
+            map.addLayer({
+                id: 'geofence-fill',
+                type: 'circle',
+                source: 'geofence',
+                paint: {
+                    'circle-radius': {
+                        stops: [
+                            [0, 0],
+                            [20, metersToPixelsAtMaxZoom(geofenceRadius, geofenceCenter[1])]
+                        ],
+                        base: 2
+                    },
+                    'circle-color': '#3b82f6',
+                    'circle-opacity': 0.2
+                }
+            });
+
+            map.addLayer({
+                id: 'geofence-border',
+                type: 'circle',
+                source: 'geofence',
+                paint: {
+                    'circle-radius': {
+                        stops: [
+                            [0, 0],
+                            [20, metersToPixelsAtMaxZoom(geofenceRadius, geofenceCenter[1])]
+                        ],
+                        base: 2
+                    },
+                    'circle-color': '#3b82f6',
+                    'circle-opacity': 0,
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#3b82f6',
+                    'circle-stroke-opacity': 0.8
+                }
+            });
+        }
+               function checkGeofence(lngLat) {
+            const distance = getDistance(
+                geofenceCenter[1], geofenceCenter[0],
+                lngLat.lat, lngLat.lng
+            );
+        }
+
+        const wasInside = isInside;
+           const isInside = distance <= geofenceRadius;
+
+        if(isInside){
+            console.log("Inside");
+        }
+        else{
+            console.log("Outside");
+        }
 
         // 1.1 Custom User Marker Setup (Replicating the original blue circle look)
         const el = document.createElement('div');
