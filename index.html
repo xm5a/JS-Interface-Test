@@ -224,10 +224,11 @@
                     //console.log('🔴 GEOFENCE EXITED');
                     //sendToAndroid('geofenceExited', { lat, lng, distance });
                 }
-            }
-        let currentValue = window.TouristAppInterface.getGeofenceStatus();
+            } // <--- The END of the 'else' block for isInside
+
+        let currentValue = window.TouristAppInterface.getGeofenceStatus(); // This line is executed OUTSIDE the intended block
                     console.log(currentValue);
-            }
+            } // <--- This brace closes the if(isInside) block, which is already closed above. WRONG POSITION!
             else{
                 console.error("Tourist App Not Found");
             }
@@ -371,7 +372,6 @@
                 watchId = null;
                 console.log("Stopped watching position");
             }
-        }
         }
     </script>
 </body>
