@@ -204,22 +204,33 @@
             const wasInside = isInside;
             isInside = distance <= geofenceRadius;
 
-            const statusEl = document.getElementById('geofence-status');
+            //const statusEl = document.getElementById('geofence-status');
+
+            if(window.TouristAppInterface){
 
             if (isInside) {
-                statusEl.innerHTML = '<span class="text-green-600">✓ Inside Geofence</span>';
+                
+                //statusEl.innerHTML = '<span class="text-green-600">✓ Inside Geofence</span>';
                 if (!wasInside) {
-                    console.log('🟢 GEOFENCE ENTERED');
-                    sendToAndroid('geofenceEntered', { lat, lng, distance });
+                    window.TouristAppInterface.setGeofenceStatus("Geofence Entered");
+                    //console.log('🟢 GEOFENCE ENTERED');
+                    //sendToAndroid('geofenceEntered', { lat, lng, distance });
+                    
                 }
             } else {
-                statusEl.innerHTML = '<span class="text-red-600">✗ Outside Geofence</span>';
+                //statusEl.innerHTML = '<span class="text-red-600">✗ Outside Geofence</span>';
                 if (wasInside) {
-                    console.log('🔴 GEOFENCE EXITED');
-                    sendToAndroid('geofenceExited', { lat, lng, distance });
+                    window.TouristAppInterface.setGeofenceStatus("Geofence Exited");
+                    //console.log('🔴 GEOFENCE EXITED');
+                    //sendToAndroid('geofenceExited', { lat, lng, distance });
                 }
             }
-        }
+        let currentValue = window.TouristAppInterface.getGeofenceStatus();
+                    console.log(currentValue);
+            }
+            else{
+                console.error("Tourist App Not Found");
+            }
 
         // Haversine distance calculation
         function getDistance(lat1, lon1, lat2, lon2) {
