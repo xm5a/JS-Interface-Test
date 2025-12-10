@@ -95,6 +95,12 @@
         const geofenceCenter = [72.8777, 19.0760]; // Thane, Maharashtra
         const geofenceRadius = 2000; // meters
         let geostat = null;
+        const wasInside = isInside;
+            isInside = distance <= geofenceRadius;
+        const distance = getDistance(
+                geofenceCenter[1], geofenceCenter[0],
+                lat, lng
+            );
         
         // Geofence state tracking
         let isInside = false;
@@ -197,13 +203,8 @@
 
         // Geofence checking function
         function checkGeofence(lat, lng) {
-            const distance = getDistance(
-                geofenceCenter[1], geofenceCenter[0],
-                lat, lng
-            );
+            
 
-            const wasInside = isInside;
-            isInside = distance <= geofenceRadius;
 
             const statusEl = document.getElementById('geofence-status');
 
