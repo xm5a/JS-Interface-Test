@@ -3,16 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>GeoTrack WebView</title>
     
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?v=1.0.0"></script>
     
     <!-- MapLibre GL CSS -->
-    <link href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" rel="stylesheet" />
+    <link href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css?v=1.0.0" rel="stylesheet" />
     
     <!-- Phosphor Icons -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web?v=1.0.0"></script>
 
     <style>
         /* Map Container Height adjustment */
@@ -83,9 +86,16 @@
     </script>
 
     <!-- MapLibre GL JS -->
-    <script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
+    <script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js?v=1.0.0"></script>
 
     <script>
+        // Force reload on back button (prevent bfcache)
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+
         // --- 1. Map Initialization ---
 
         // Default Location (New York Central Park)
