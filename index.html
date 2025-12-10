@@ -96,7 +96,7 @@
         const geofenceRadius = 2000; // meters
         let geostat = null;
         const wasInside = isInside;
-            isInside = distance <= geofenceRadius;
+        let isInside = distance <= geofenceRadius;
         const distance = getDistance(
                 geofenceCenter[1], geofenceCenter[0],
                 lat, lng
