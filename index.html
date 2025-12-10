@@ -94,17 +94,10 @@
         const startLngLat = [DEFAULT_LNG, DEFAULT_LAT];
         const geofenceCenter = [72.8777, 19.0760]; // Thane, Maharashtra
         const geofenceRadius = 2000; // meters
+        
+        // Geofence state tracking (GLOBAL VARIABLES)
+        let wasInside = false;
         let geostat = null;
-        
-        
-        const distance = getDistance(
-                geofenceCenter[1], geofenceCenter[0],
-                lat, lng
-            );
-        let isInside = distance <= geofenceRadius;
-        const wasInside = isInside;
-        
-        // Geofence state tracking
         
         // Initialize MapLibre Map
         const map = new maplibregl.Map({
@@ -204,26 +197,45 @@
 
         // Geofence checking function
         function checkGeofence(lat, lng) {
-            
-
-
+            const distance = getDistance(
+                geofenceCenter[1], geofenceCenter[0],
+                lat, lng
+            );
+            const isInside = distance <= geofenceRadius;
             const statusEl = document.getElementById('geofence-status');
 
-            if (window.TouristAppInterface) {
-                if (isInside) {
-                    statusEl.innerHTML = '<span class="text-green-600">✓ Inside Geofence</span>';
-                    if (!wasInside) {
+            // Determine geofence status
+            if (isInside) {
+                geostat = "Inside";
+                statusEl.innerHTML = '<span class="text-green-600">✓ Inside Geofence</span>';
+                
+                if (!wasInside) {
+                    geostat = "Entered";
+                    console.log('✓ GEOFENCE ENTERED');
+                    
+                    if (window.TouristAppInterface) {
                         window.TouristAppInterface.setGeofenceStatus("Geofence Entered");
-                        console.log('✓ GEOFENCE ENTERED');
-                    }
-                } else {
-                    statusEl.innerHTML = '<span class="text-red-600">✗ Outside Geofence</span>';
-                    if (wasInside) {
-                        window.TouristAppInterface.setGeofenceStatus("Geofence Exited");
-                        console.log('✗ GEOFENCE EXITED');
                     }
                 }
+            } else {
+                geostat = "Outside";
+                statusEl.innerHTML = '<span class="text-red-600">✗ Outside Geofence</span>';
                 
+                if (wasInside) {
+                    geostat = "Exited";
+                    console.log('✗ GEOFENCE EXITED');
+                    
+                    if (window.TouristAppInterface) {
+                        window.TouristAppInterface.setGeofenceStatus("Geofence Exited");
+                    }
+                }
+            }
+
+            // Update state for next check
+            wasInside = isInside;
+
+            // Log current status if interface available
+            if (window.TouristAppInterface) {
                 try {
                     let currentValue = window.TouristAppInterface.getGeofenceStatus();
                     console.log('Current Geofence Status:', currentValue);
@@ -231,12 +243,6 @@
                     console.error('Error getting geofence status:', e);
                 }
             } else {
-                // Fallback for web testing
-                if (isInside) {
-                    statusEl.innerHTML = '<span class="text-green-600">✓ Inside Geofence</span>';
-                } else {
-                    statusEl.innerHTML = '<span class="text-red-600">✗ Outside Geofence</span>';
-                }
                 console.log('TouristAppInterface not available (web mode)');
             }
         }
@@ -352,28 +358,13 @@
                     // Check geofence
                     checkGeofence(lat, lng);
 
-                    if (isInside) {
-                    geostat = "Inside";
-                    if (!wasInside) {
-                        geostat = "Entered";
-                        console.log('✓ GEOFENCE ENTERED');
-                    }
-                } else {
-                    geostat = "Outside";
-                    if (wasInside) {
-                        geostat = "Exited";
-                        console.log('✗ GEOFENCE EXITED');
-                    }
-                }
-                
-
                     // Send position to Android
                     sendToAndroid('locationUpdate', { 
                         lat, 
                         lng, 
                         accuracy, 
                         timestamp: timestamp.toISOString(),
-                        Hi: geostat
+                        geofenceStatus: geostat
                     });
                 },
                 (error) => {
