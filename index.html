@@ -94,6 +94,7 @@
         const startLngLat = [DEFAULT_LNG, DEFAULT_LAT];
         const geofenceCenter = [72.8777, 19.0760]; // Thane, Maharashtra
         const geofenceRadius = 2000; // meters
+        let geostat = null;
         
         // Geofence state tracking
         let isInside = false;
@@ -349,13 +350,28 @@
                     // Check geofence
                     checkGeofence(lat, lng);
 
+                    if (isInside) {
+                    geostat = "Inside";
+                    if (!wasInside) {
+                        geostat = "Entered";
+                        console.log('✓ GEOFENCE ENTERED');
+                    }
+                } else {
+                    geostat = "Outside";
+                    if (wasInside) {
+                        geostat = "Exited";
+                        console.log('✗ GEOFENCE EXITED');
+                    }
+                }
+                
+
                     // Send position to Android
                     sendToAndroid('locationUpdate', { 
                         lat, 
                         lng, 
                         accuracy, 
                         timestamp: timestamp.toISOString(),
-                        Hi: "Hello World"
+                        Hi: geostat
                     });
                 },
                 (error) => {
