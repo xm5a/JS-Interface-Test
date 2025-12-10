@@ -268,15 +268,20 @@
             map.zoomOut({ duration: 300 }); 
         }
 
-        // Bridge to Android (Native)
+        // Bridge to Android (Native) - NOW USES TouristAppInterface
         function sendToAndroid(action, data) {
             console.log(`Sending to Android -> Action: ${action}, Data:`, data);
             
-            // Check for Android interface
-            if (typeof Android !== 'undefined' && Android.handleAction) {
-                Android.handleAction(action, JSON.stringify(data || {}));
+            // Check for TouristAppInterface (unified interface)
+            if (typeof window.TouristAppInterface !== 'undefined' && window.TouristAppInterface.handleAction) {
+                try {
+                    window.TouristAppInterface.handleAction(action, JSON.stringify(data || {}));
+                    console.log('✓ Successfully sent to Android');
+                } catch (e) {
+                    console.error('✗ Error calling TouristAppInterface:', e);
+                }
             } else {
-                console.log('Android interface not available (running in web mode)');
+                console.log('TouristAppInterface not available (running in web mode)');
             }
         }
 
@@ -298,7 +303,7 @@
                 btnIcon.classList.remove('ph-play');
                 btnIcon.classList.add('ph-stop');
                 
-                sendToAndroid('startTracking');
+                sendToAndroid('startTracking', {});
                 startWatchingPosition();
             } else {
                 // STOP
@@ -309,7 +314,7 @@
                 btnIcon.classList.remove('ph-stop');
                 btnIcon.classList.add('ph-play');
 
-                sendToAndroid('stopTracking');
+                sendToAndroid('stopTracking', {});
                 stopWatchingPosition();
             }
         }
@@ -345,7 +350,12 @@
                     checkGeofence(lat, lng);
 
                     // Send position to Android
-                    sendToAndroid('locationUpdate', { lat, lng, accuracy, timestamp: timestamp.toISOString() });
+                    sendToAndroid('locationUpdate', { 
+                        lat, 
+                        lng, 
+                        accuracy, 
+                        timestamp: timestamp.toISOString() 
+                    });
                 },
                 (error) => {
                     console.error("Geolocation Error:", error.message);
