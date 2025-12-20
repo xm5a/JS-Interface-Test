@@ -205,6 +205,18 @@
             checkGeofence(DEFAULT_LAT, DEFAULT_LNG);
         });
 
+        map.on('idle', () => {
+            const center = map.getCenter();
+            const point = map.project(center);
+            const features = map.queryRenderedFeatures(point, {
+                layers: ['settlement-major-label']
+            })
+            if (features.length > 0}){
+                const cityName = features[0].properties.name;
+                console.log("Center City:", cityName);
+            }
+        });
+
         // Geofence checking function
         function checkGeofence(lat, lng) {
             const distance = getDistance(
