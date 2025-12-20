@@ -209,12 +209,13 @@
         function getCityName(lng, lat){
             const lnglat = {lng, lat};
             const point = map.project(lnglat);
+            const cityName = null;
             const features = map.queryRenderedFeatures(point, {
                 layers: ['geofence-fill']
             })
             if (features.length > 0){
-                CityName = features[0].properties.name;
-                return CityName;
+                cityName = features[0].properties.name;
+                return cityName;
             }
         }
 
@@ -381,6 +382,7 @@
                     // Check geofence
                     checkGeofence(lat, lng);
                     //getCityName();
+                    CityName = getCityName(lng,lat);
 
                     // Send position to Android
                     sendToAndroid('locationUpdate', { 
@@ -389,7 +391,7 @@
                         accuracy, 
                         timestamp: timestamp.toISOString(),
                         Hi: geostat,
-                        City: getCityName(lng,lat);
+                        City: CityName
                     });
                 },
                 (error) => {
