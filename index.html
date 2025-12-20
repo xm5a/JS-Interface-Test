@@ -206,10 +206,10 @@
         });
 
         map.on('idle', () => {
-            const center = map.getCenter();
-            const point = map.project(center);
+            const lnglat = marker.getCenter();
+            const point = map.project(lnglat);
             const features = map.queryRenderedFeatures(point, {
-                layers: ['settlement-major-label']
+                layers: ['geofence-fill']
             })
             if (features.length > 0){
                 const cityName = features[0].properties.name;
