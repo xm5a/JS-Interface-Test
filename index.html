@@ -206,7 +206,7 @@
         });
 
         map.on('idle', () => {
-            const lnglat = userMarker.getCenter();
+            const lnglat = userMarker.getLngLat();
             const point = map.project(lnglat);
             const features = map.queryRenderedFeatures(point, {
                 layers: ['geofence-fill']
