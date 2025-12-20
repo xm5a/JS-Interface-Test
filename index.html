@@ -104,6 +104,7 @@
         const startLngLat = [DEFAULT_LNG, DEFAULT_LAT];
         const geofenceCenter = [72.8777, 19.0760]; // Thane, Maharashtra
         const geofenceRadius = 2000; // meters
+        const CityName = null;
         
         // Geofence state tracking (GLOBAL VARIABLES)
         let wasInside = false;
@@ -205,17 +206,17 @@
             checkGeofence(DEFAULT_LAT, DEFAULT_LNG);
         });
 
-        map.on('idle', () => {
+        function getCityName(){
             const lnglat = userMarker.getLngLat();
             const point = map.project(lnglat);
             const features = map.queryRenderedFeatures(point, {
                 layers: ['geofence-fill']
             })
             if (features.length > 0){
-                const cityName = features[0].properties.name;
-                console.log("Center City:", cityName);
+                CityName = features[0].properties.name;
+                console.log("Center City:", CityName);
             }
-        });
+        }
 
         // Geofence checking function
         function checkGeofence(lat, lng) {
@@ -379,6 +380,7 @@
 
                     // Check geofence
                     checkGeofence(lat, lng);
+                    getCityName();
 
                     // Send position to Android
                     sendToAndroid('locationUpdate', { 
@@ -387,6 +389,7 @@
                         accuracy, 
                         timestamp: timestamp.toISOString(),
                         Hi: geostat
+                        City: CityName
                     });
                 },
                 (error) => {
