@@ -206,15 +206,15 @@
             checkGeofence(DEFAULT_LAT, DEFAULT_LNG);
         });
 
-        function getCityName(){
-            const lnglat = userMarker.getLngLat();
+        function getCityName(lng, lat){
+            const lnglat = {lng, lat};
             const point = map.project(lnglat);
             const features = map.queryRenderedFeatures(point, {
                 layers: ['geofence-fill']
             })
             if (features.length > 0){
                 CityName = features[0].properties.name;
-                console.log("Center City:", CityName);
+                return CityName;
             }
         }
 
@@ -389,7 +389,7 @@
                         accuracy, 
                         timestamp: timestamp.toISOString(),
                         Hi: geostat,
-                        City: CityName
+                        City: getCityName(lat,lng);
                     });
                 },
                 (error) => {
