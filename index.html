@@ -380,7 +380,7 @@
 
                     // Check geofence
                     checkGeofence(lat, lng);
-                    getCityName();
+                    //getCityName();
 
                     // Send position to Android
                     sendToAndroid('locationUpdate', { 
@@ -389,7 +389,7 @@
                         accuracy, 
                         timestamp: timestamp.toISOString(),
                         Hi: geostat,
-                        City: getCityName(lat,lng);
+                        City: getCityName(lng,lat);
                     });
                 },
                 (error) => {
